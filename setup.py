@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="simplewebserver",
-    version="0.0.5",
+    version="0.0.6",
     author="Jun Ke",
     author_email="kejun91@gmail.com",
     description="A simple http.server based web server",

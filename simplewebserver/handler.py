@@ -6,7 +6,7 @@ import logging
 import types
 from typing import Optional
 from urllib.parse import parse_qs, urlparse
-from simplewebserver.decorator import routes
+from simplewebserver.decorator import routes, sort_route
 from simplewebserver.utils import get_exception_detail
 from simplewebserver.utils import CustomEncoder
 
@@ -29,6 +29,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         try:
             if not self.server._routes_imported:
                 self.server._import_routes_modules()
+                sorted_routes = sorted(routes, key=sort_route)
 
             parsed_url = urlparse(self.path)
             path = parsed_url.path
@@ -42,11 +43,14 @@ class RequestHandler(BaseHTTPRequestHandler):
             method_matched = False
             handler = None
 
-            for route in routes:
+            for route in sorted_routes:
                 if route.get('method') == method:
                     method_matched = True
 
-                if path.startswith(route.get('path')):
+                if route.get('match_type') == 'exact' and route.get('path') == path:
+                    path_matched = True
+                
+                if route.get('match_type') == 'prefix' and path.startswith(route.get('path')):
                     path_matched = True
 
                 if method_matched and path_matched:
@@ -62,8 +66,10 @@ class RequestHandler(BaseHTTPRequestHandler):
                     headers = headers
                 ))
 
-                if isinstance(response, dict):
-                    response = Response(headers={"Content-type":"application/json"}, body = response, status_code=200)
+                if response is None:
+                    response = Response(status_code=200)
+                if isinstance(response, dict) or isinstance(response, list) or isinstance(response, str):
+                    response = Response(body = response, status_code=200)
             elif path_matched:
                 response = Response(headers={"Content-type":"text/plain"}, body = HTTPStatus(405).phrase, status_code=405)
             else:
@@ -85,7 +91,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             elif isinstance(response.body, bytes):
                 bytes_body = response.body
                 self.wfile.write(bytes_body)
-            elif isinstance(response.body, dict):
+            elif isinstance(response.body, dict) or isinstance(response.body, list):
                 json_body = json.dumps(response.body, cls=CustomEncoder)
                 self.wfile.write(json_body.encode())
 

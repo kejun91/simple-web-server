@@ -61,6 +61,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                     body = body,
                     headers = headers
                 ))
+
+                if isinstance(response, dict):
+                    response = Response(headers={"Content-type":"application/json"}, body = response, status_code=200)
             elif path_matched:
                 response = Response(headers={"Content-type":"text/plain"}, body = HTTPStatus(405).phrase, status_code=405)
             else:

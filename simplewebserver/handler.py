@@ -12,6 +12,8 @@ from simplewebserver.utils import CustomEncoder
 
 logger = logging.getLogger()
 
+sorted_routes = None
+
 class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.handle_request('GET')
@@ -27,6 +29,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def handle_request(self, method):
         try:
+            global sorted_routes
             if not self.server._routes_imported:
                 self.server._import_routes_modules()
                 sorted_routes = sorted(routes, key=sort_route)
@@ -37,7 +40,13 @@ class RequestHandler(BaseHTTPRequestHandler):
             headers = self.headers
 
             content_length = int(self.headers['Content-Length'] or '0')
-            body:bytes = self.rfile.read(content_length).decode() if content_length > 0 else None
+            body = self.rfile.read(content_length).decode() if content_length > 0 else None
+
+            if body is not None:
+                try:
+                    body = json.loads(body)
+                except json.JSONDecodeError as e:
+                    logger.info(get_exception_detail(e))
 
             path_matched = False
             method_matched = False

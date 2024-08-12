@@ -32,7 +32,7 @@ server.include_routes_module(my_routes)
 server.start(port=5000)
 ```
 
-```
+```python
 # my_routes.py
 from simplewebserver import route, Request, Response
 
